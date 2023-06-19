@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Add Row to Google Sheets</title>
+    <script>
+      function addRow() {
+        fetch('https://helloworld1-ctij4zrbgq-uw.a.run.app/addRow')
+          .then(response => response.text())
+          .then(data => alert(data))
+          .catch((error) => {
+            console.error('Error:', error);
+          });
+      }
+    </script>
+  </head>
+  <body>
+    <button onclick="addRow()">Add Row</button>
+  </body>
+</html>
