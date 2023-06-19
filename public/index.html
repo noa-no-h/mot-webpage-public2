@@ -1,0 +1,656 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+      }
+
+      canvas {
+        border: 1px solid black;
+        background-color: SteelBlue;
+      }
+    </style>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/stdlib-js/math-base-special-erfcinv@umd/browser.js"></script>
+    <script>
+
+//*** Global variables and general game configuration ***//
+
+// Level configurations
+let flashingBalls = [
+2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 
+7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10
+]; // flashing balls for each level
+
+let distractorBalls = [
+1, 2, 3, 1, 2, 3, 2, 3, 4, 2, 3, 4, 3, 4, 5, 3, 4, 5, 4, 5, 6, 4, 5, 6, 5, 6, 7, 5, 6, 7, 
+6, 7, 8, 6, 7, 8, 7, 8, 9, 7, 8, 9, 8, 9, 10, 8, 9, 10, 9, 10
+]; // distractor balls for each level
+
+let speeds = [
+3, 3, 3, 5, 5, 5, 7, 7, 7, 3, 3, 3, 5, 5, 5, 7, 7, 7, 3, 3, 3, 5, 5, 5, 7, 7, 7, 3, 3, 3,
+5, 5, 5, 7, 7, 7, 3, 3, 3, 5, 5, 5, 7, 7, 7, 3, 3, 3, 5, 5
+]; // speeds for each level
+
+let level = 0; // Current level
+let tutorial = true; // Is tutorial active?
+let dprimesArray = []; // Array to store d-prime values (the main way we are keeping track of scores)
+let rowAlreadyAdded = false; // Flag to prevent the addition of duplicate rows
+let showSelectMoreText = false; // flag to show select more circles warning when you haven't selected enough
+let alreadyEnteredID = false; // they will only enter their ID once
+let response_time = 0;
+let timeOfQuestion = 0;
+let timeOfResponse = 0;
+let alreadyCheckedTimeOfQuestion = false;
+let alreadyCheckedTimeOfAnswer = false;
+let consecutive = 0;
+let score = 0;
+
+
+let milisecondsJustCross = 1000; // 1 second
+let milisecondsFirstBallsAndCrossAppearWithoutFlashing = 2000; // 2 seconds
+let milisecondsBallsFlash = 1000; // 1 second
+let milisecondsBallsInMotion = 4500; // 4.5 seconds
+let milisecondsFeedbackText = 4000; // 4 seconds
+let milisecondsTimeOut = 60000; // 60 seconds
+let totalGameTime = 20 * 60 * 1000; // 20 minutes
+
+let circleRadius = 4;
+
+
+class Circle {
+    constructor(x, y, dx, dy, color) {
+        this.x = x;
+        this.y = y;
+        this.dx = dx;
+        this.dy = dy;
+        this.color = color;
+        this.origcolor = color;
+        this.isSelected = false; // Whether the circle is selected or not
+    }
+
+    draw(ctx) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 30, 0, Math.PI * 2, false);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    
+    // Function to update the circle's position
+    update() {
+        this.x += this.dx;
+        this.y += this.dy;
+    }
+}
+
+let canvas, ctx, circles, phase, startTime, phaseStartTime, gameStartTime;
+
+let tutorialTexts = [
+"You will first see a cross at the center of the screen. Please focus your gaze to that cross. Press F to continue.",
+"There will be circles appearing on the screen, some of them will flash in YELLOW. The cross will disappear, and all circles will start to move. Keep track of those flashed circles. Press F to continue once the circles flash.",
+"When the circles stop moving, select which circles you've been tracking by clicking them. When you have made your selection, press the SPACEBAR to submit your selection. Press F to start when you are ready. If you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial.",
+"Now, circles will appear randomly around the screen. Some random circles will flash briefly. Remember which circles flashed. The cross will disappear, and all circles will start moving when the flashing stops. Press F to continue.",
+"The guide is now complete, and you will move to practice rounds, where you will go through the experiment in normal order, but your answers will not be recorded. After the practice is finished, you will move to the real experiments where your responses will be recorded. Press F to move to the practice rounds."
+];
+
+
+function correctAudioPlay() {
+  var correctSound = new Audio('https://drive.google.com/uc?export=download&id=1orrtFi9L31zRWFeM5x_Y3129XlLOMn3v');
+  correctSound.play();}
+function incorrectAudioPlay() {
+  var incorrectSound = new Audio('https://drive.google.com/uc?export=download&id=1uCbx15jBq3HU6krKt1ZgHttGhjwozFvR');
+  incorrectSound.play();}
+
+function calculateScore(){
+    return score + consecutive + Math.floor(level / 2)
+}
+function generateDPrimesArray() {
+    console.log(dprimesArray);
+    console.log("level: " + level);
+    
+    let totalTargs = flashingBalls[level];
+    let totalBalls = flashingBalls[level] + distractorBalls[level];;
+    let hits = correctSelections;
+    let misses = totalTargs - hits;
+    let faRate = misses / (totalBalls - totalTargs);
+    let correctRejections = (totalBalls - totalTargs) - misses;
+    let halfHit = 0.5 / (hits + misses);
+    let halfFa = 0.5 / (misses + correctRejections);
+    let hitRate = hits/totalTargs;
+
+    console.log("faRate: " + faRate);
+    console.log("hits: " + hits);
+    console.log("misses: " + misses);
+    console.log("totalBalls: " + totalBalls);
+    console.log("totalBalls - totalTargs: ", totalBalls - totalTargs);
+
+
+
+    let hitRateAdjusted = hitRate;
+    if (hitRateAdjusted === 1) {
+        hitRateAdjusted = 1 - halfHit;
+    } else if (hitRateAdjusted === 0) {
+        hitRateAdjusted = halfHit;
+    }
+
+    let faRateAdjusted = faRate;
+    if (faRateAdjusted === 1) {
+        faRateAdjusted = 1 - halfFa;
+    } else if (faRateAdjusted === 0) {
+        faRateAdjusted = halfFa;
+    }
+
+    console.log("hitRateAdjusted: " + hitRateAdjusted);
+    console.log("faRateAdjusted: " + faRateAdjusted);
+
+
+    let zHit = -Math.sqrt(2) * erfcinv(2 * hitRateAdjusted);
+    let zFa = -Math.sqrt(2) * erfcinv(2 * faRateAdjusted);
+
+    console.log('zHit: ' + zHit);
+    console.log("zFa: " + zFa);
+    
+    let dp = zHit - zFa;
+
+    console.log("dp: " + dp);
+
+    console.log(Array.isArray(dprimesArray));
+
+    dprimesArray.push(dp);
+    console.log("dprimesArray is array " +  Array.isArray(dprimesArray));
+    console.log("dprimesArray length " + dprimesArray.length)
+    console.log("dprimesArray " + dprimesArray)
+
+}
+
+      
+function addRow(participant_number, response_time, targets_identified, total_targets, level, timed_out, d_prime, total_time) {
+    // Construct the URL
+    const url = 'https://version1-ctij4zrbgq-uw.a.run.app/addRow';
+    //const url = 'http://localhost:8080/addRow';
+
+
+    // Create the request body
+    const body = {
+        participant_number: participant_number,
+        response_time: response_time,
+        targets_identified: targets_identified,
+        total_targets: total_targets,
+        level: level,
+        timed_out: timed_out,
+        d_prime: d_prime,
+        total_time: total_time
+    };
+
+    // Make the POST request
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+    .then(response => response.text())
+    .then(data => console.log(data))
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+}
+
+/**
+ * Function to transition to a new phase
+ * @param {number} newPhase - The phase to transition to
+ */
+function transitionToPhase(newPhase) {
+  phase = newPhase;
+  phaseStartTime = performance.now();  // Reset phaseStartTime
+
+  if (newPhase === 1) {
+    circles = createCircles();  // Create new circles for the new level
+  }
+}
+      
+      window.onload = function () {
+        canvas = document.getElementById("gameCanvas");
+        ctx = canvas.getContext("2d");
+        gameStartTime = performance.now();
+
+        function resizeCanvas() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas);
+
+        // Initialize game variables
+        circles = createCircles();
+        phase = 1;
+        phaseStartTime = performance.now();
+        startTime = performance.now();
+        correctSelections = 0;
+        totalSelections = 0;
+
+        canvas.addEventListener("click", canvasClickHandler);
+        document.addEventListener("keydown", keydownHandler);
+
+        gameLoop();
+      };
+
+      function circlesOverlap(circle1, circle2) {
+        let dx = circle2.x - circle1.x;
+        let dy = circle2.y - circle1.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        return distance <= 60;
+      }
+
+      function createCircles() {
+        let circles = [];
+
+        // Create distractor balls
+        for (let i = 0; i < distractorBalls[level]; i++) {
+            let newCircle = new Circle(
+            30 + Math.random() * (canvas.width - 60),
+            30 + Math.random() * (canvas.height - 60),
+            1 + Math.random() * speeds[level],
+            1 + Math.random() * speeds[level],
+            "black"
+            );
+            while (circles.some(c => circlesOverlap(c, newCircle))) {
+            newCircle.x = 30 + Math.random() * (canvas.width - 60);
+            newCircle.y = 30 + Math.random() * (canvas.height - 60);
+            }
+            circles.push(newCircle);
+        }
+
+        // Create flashing balls
+        for (let i = 0; i < flashingBalls[level]; i++) {
+            let newCircle = new Circle(
+            30 + Math.random() * (canvas.width - 60),
+            30 + Math.random() * (canvas.height - 60),
+            1 + Math.random() * speeds[level],
+            1 + Math.random() * speeds[level],
+            "gold"
+            );
+            while (circles.some(c => circlesOverlap(c, newCircle))) {
+            newCircle.x = 30 + Math.random() * (canvas.width - 60);
+            newCircle.y = 30 + Math.random() * (canvas.height - 60);
+            }
+            circles.push(newCircle);
+        }
+
+        return circles;
+        }
+
+      /**
+       * Function to check for collisions between circles and canvas bounds
+       */
+      function circleCollision() {
+        circles.forEach((circle) => {
+          if (circle.x + circle.dx < 30 || circle.x + circle.dx > canvas.width - 30) {
+            circle.dx = -circle.dx;
+          }
+          if (circle.y + circle.dy < 30 || circle.y + circle.dy > canvas.height - 30) {
+            circle.dy = -circle.dy;
+          }
+        });
+      }
+      
+      function circleBounce() {
+        for (let i = 0; i < circles.length; i++) {
+          for (let j = i + 1; j < circles.length; j++) {
+            let dx = circles[j].x - circles[i].x;
+            let dy = circles[j].y - circles[i].y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance <= 60) {
+              // Swap the circles' speed in x-axis
+              let temp_dx = circles[i].dx;
+              circles[i].dx = circles[j].dx;
+              circles[j].dx = temp_dx;
+
+              // Swap the circles' speed in y-axis
+              let temp_dy = circles[i].dy;
+              circles[i].dy = circles[j].dy;
+              circles[j].dy = temp_dy;
+            }
+          }
+        }
+      }
+
+
+      /**
+       * Function to display text on canvas
+       * @param {string} text - Text to display
+       * @param {number} x - x position of the text
+       * @param {number} y - y position of the text
+       */
+       function displayText(text, x, y) {
+        ctx.font = "40px Arial";
+        ctx.fillStyle = "white";
+        let maxWidth = canvas.width - 2 * x; // Maximum width of the text
+        let lineHeight = 40; // Line height
+        let words = text.split(' ');
+        let line = '';
+
+        for(let n = 0; n < words.length; n++) {
+            let testLine = line + words[n] + ' ';
+            let metrics = ctx.measureText(testLine);
+            let testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+                ctx.fillText(line, x, y);
+                line = words[n] + ' ';
+                y += lineHeight;
+            }
+            else {
+                line = testLine;
+            }
+        }
+        ctx.fillText(line, x, y);
+    }
+      /**
+       * Function to handle click event on canvas
+       */
+    
+       let selectedQueue = []
+    function canvasClickHandler(event) {
+    if (phase === 5) {
+        let rect = canvas.getBoundingClientRect();
+        let mouseX = event.clientX - rect.left;
+        let mouseY = event.clientY - rect.top;
+
+        circles.forEach((circle) => {
+        let dx = mouseX - circle.x;
+        let dy = mouseY - circle.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= 30) {
+            if (circle.isSelected) {
+            // If the circle is already selected, deselect it and remove it from the queue
+            circle.isSelected = false;
+            selectedQueue = selectedQueue.filter(c => c !== circle);
+            } else {
+            // If the circle is not selected, select it and add it to the queue
+            if (selectedQueue.length === flashingBalls[level]) {
+                // If there are already n circles in the queue, where n is the level number of flashingBalls,
+                // deselect and remove the first one
+                selectedQueue[0].isSelected = false;
+                selectedQueue.shift();
+            }
+            circle.isSelected = true;
+            selectedQueue.push(circle);
+            }
+        }
+        });
+    }
+    }
+
+
+      /**
+       * Function to handle keydown event
+       */
+      function keydownHandler(event) {
+        if (event.key === "f" || event.key === "F") {
+            if ((phase === 1 && tutorial) || (phase === 3 && tutorial)) {
+                transitionToPhase((phase + 1));
+            }
+        }
+        if (phase === 5 && event.key === " ") {
+            // Count correct circle selections and proceed to phase 4
+            correctSelections = 0;
+            totalSelections = 0;
+            circles.forEach((circle) => {
+                if (circle.isSelected) {
+                    totalSelections += 1;
+                }
+                if (circle.origcolor === "gold" && circle.isSelected) {
+                    correctSelections += 1;
+                }
+            });
+
+            if (totalSelections < flashingBalls[level]){
+                showSelectMoreText = true; //this will have its effect in the game loop part for phase 5
+                
+            }
+            else{
+                // Level progression and regression
+                if (correctSelections === flashingBalls[level]) {
+                    // If all flashing balls were correctly selected, move to the next level
+                    level = Math.min(level + 1, flashingBalls.length - 1);
+                    consecutive += 1;
+                } else {
+                    // If at least one flashing ball was not correctly selected, move to the level three previous
+                    level = Math.max(level - 3, 0);
+                    consecutive = Math.floor(consecutive / 2)
+                }
+
+                timeOfResponse = performance.now();
+                transitionToPhase(6);
+            }
+                       
+        }
+    }
+
+
+      /**
+       * Function to draw a cross in the center of the canvas
+       */
+      function drawCross() {
+        const crossSize = 50;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX - crossSize / 2, centerY - crossSize / 2);
+        ctx.lineTo(centerX + crossSize / 2, centerY + crossSize / 2);
+        ctx.moveTo(centerX + crossSize / 2, centerY - crossSize / 2);
+        ctx.lineTo(centerX - crossSize / 2, centerY + crossSize / 2);
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        ctx.closePath();
+      }
+
+      /*** Main game loop function ***/
+
+       function gameLoop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  if (tutorial & !alreadyEnteredID) {
+    let subjectID = prompt("Hello! Please enter your subject ID. (It will be a number)");
+    //subjectID = Number(subjectID);
+    console.log(subjectID);
+    // handle case when user clicks "Cancel" on the prompt box (subjectID will be null in this case)
+    if(subjectID !== null & subjectID !== 0) {
+        alreadyEnteredID = true;
+    }
+    // And also handle case when user enters not a number
+    else if(isNaN(subjectID)) {
+        alert("Please enter a number for the subject ID.");
+    }
+  }
+
+  //  Phase 1: Display a cross at the center
+if (phase === 1 & alreadyEnteredID) {
+  rowAlreadyAdded = false;
+  currentFlashingBalls = flashingBalls[level];
+  drawCross();
+  if (tutorial) {
+    displayText(tutorialTexts[0], 40, 80);
+  }
+
+
+  else { //else becase if we're in the tutorial, we transition to the next phase using f
+    if (performance.now() - phaseStartTime >= milisecondsJustCross) {
+        // Transition to phase 2 after 1.5 seconds
+        transitionToPhase(2);
+    }
+    }
+}
+
+//Phase 2: Circles appear all black
+if (phase === 2) {
+    drawCross();
+
+    circles.forEach((circle) => {
+        circle.color = "black";
+        circle.draw(ctx);
+        });
+    
+ 
+    if (tutorial) {
+        displayText(tutorialTexts[1], 40, 80);
+    }
+
+    if (performance.now() - phaseStartTime >= milisecondsFirstBallsAndCrossAppearWithoutFlashing) {
+        // Transition to phase 3 after 1 seconds
+        transitionToPhase(3);
+    }
+}
+    
+
+// Phase 3: Green flash phase
+if (phase === 3) {
+  drawCross();
+
+  //code to flash circles gold
+    circles.forEach((circle) => {
+        if (circle.origcolor === "gold") {
+            circle.color = "gold";
+        }
+        circle.draw(ctx);
+    });
+    
+  if (tutorial) {
+    displayText(tutorialTexts[1], 40, 80);
+  }
+
+
+  if (!tutorial){ 
+    if (performance.now() - phaseStartTime >=  + milisecondsBallsFlash) {
+    //!tutorial becase if we're in the tutorial, we transition to the next phase using f
+    // Transition to phase 4 after 1 seconds
+    transitionToPhase(4);
+    circles.forEach((circle) => {
+    circle.color = "black";});
+  }
+}
+}
+
+  // Phase 4: Motion stage
+  if (phase === 4) {
+    circleCollision();
+    circleBounce(); 
+
+    circles.forEach((circle) => {
+      circle.color = "black";
+      circle.update();
+      circle.draw(ctx);
+    });
+
+    if (performance.now() - phaseStartTime >= milisecondsBallsInMotion) {
+      // Transition to phase 5 after 4.5 seconds
+      transitionToPhase(5);
+    }
+  }
+
+  // Phase 5: Question phase
+  if (phase === 5) {
+    circles.forEach((circle) => {
+      circle.draw(ctx);
+      if (circle.isSelected) {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 5;
+        ctx.strokeRect(circle.x - 35, circle.y - 35, 70, 70);  // Adjust for new circle radius
+      }
+    });
+
+    let text = "Select the circles you've been tracking by clicking on them. Press space to submit your selection.";
+    if (showSelectMoreText){
+        text += "\n Please select " + flashingBalls[level] + " circles!"
+    };
+    displayText(text, 40, 80);
+    if (alreadyCheckedTimeOfQuestion === false){
+        timeOfQuestion = performance.now();
+        alreadyCheckedTimeOfQuestion = true;
+    }
+
+  }
+
+  // Phase 6: Feedback phase
+  if (phase === 6) {
+
+    
+    responseTime = timeOfResponse - timeOfQuestion;
+    const text = "You got " + correctSelections + " out of " +  currentFlashingBalls + " correct!";
+    displayText(text, 40, 80);
+
+    // we only want to do the following two things (add row and play audio) once
+    if(rowAlreadyAdded === false){
+        console.log('addrow about to be called')
+        //let participant_number = subjectID;
+        let participant_number = 1;
+        let targets_identified = correctSelections;
+        let total_targets = currentFlashingBalls;
+        let response_time = responseTime
+        //const level = level;
+        let timed_out = false;
+        //let timed_out = 0;
+        console.log(dprimesArray)
+        generateDPrimesArray()
+        let d_prime = dprimesArray[dprimesArray.length - 1];
+        //let d_prime = 33;
+        let total_time = performance.now() - gameStartTime;
+        console.log(participant_number, response_time, targets_identified, total_targets, level, timed_out, d_prime, total_time)
+        addRow(participant_number, response_time, targets_identified, total_targets, level, timed_out, d_prime, total_time);
+        
+        if (correctSelections === currentFlashingBalls) {
+        correctAudioPlay();
+    } else {
+        incorrectAudioPlay();
+    }
+        
+        rowAlreadyAdded = true;
+    }
+
+    
+    let levelText = "";
+    if (correctSelections === currentFlashingBalls) {
+        levelText = "Moving up to level " + level + ".";
+    } else {
+        levelText = "Moving down to level " + level + ".";
+    }
+    displayText(levelText, 40, 120);
+
+    scoreText = "Your score:" + calculateScore();
+    displayText(scoreText, 40, 160);
+
+    tutorial = false;
+
+
+    if (performance.now() - phaseStartTime >= milisecondsFeedbackText) {
+      // Transition to phase 1 after 4 seconds
+      transitionToPhase(1);
+    }
+  }
+
+  // End the game after 20 minutes
+  if (performance.now() - gameStartTime >= totalGameTime) {
+    const text = "Game Over!";
+    displayText(text, 40, 80);
+    return; // Stop the game loop
+  }
+
+  
+  requestAnimationFrame(gameLoop);
+}
+    
+</script>
+  </head>
+  <body>
+    <canvas id="gameCanvas"></canvas>
+  </body>
+</html>
