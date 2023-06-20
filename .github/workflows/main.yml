@@ -5,44 +5,16 @@ on:
       - main
 
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Use Node.js 16
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - name: Install Dependencies
-        run: npm install
-      - name: Build
-        run: npm run build-prod
-      - name: Archive Production Artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: dist
-          path: dist
   deploy:
     name: Deploy
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-      - name: Use Node.js 16
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-      - name: Download Artifact
-        uses: actions/download-artifact@main
-        with:
-          name: dist
-          path: dist
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
         with:
           args: deploy --only hosting
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT: 'mot-task-389917'
