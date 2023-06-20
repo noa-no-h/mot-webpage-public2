@@ -88,7 +88,7 @@ class Circle {
     }
 }
 
-let canvas, ctx, circles, phase, startTime, phaseStartTime, gameStartTime;
+let canvas, ctx, circles, phase, startTime, phaseStartTime, gameStartTime, subjectID;
 
 let tutorialTexts = [
 "You will first see a cross at the center of the screen. Please focus your gaze to that cross. Press F to continue.",
@@ -463,7 +463,7 @@ function transitionToPhase(newPhase) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   if (tutorial & !alreadyEnteredID) {
-    let subjectID = prompt("Hello! Please enter your subject ID. (It will be a number)");
+    subjectID = prompt("Hello! Please enter your subject ID. (It will be a number)");
     //subjectID = Number(subjectID);
     console.log(subjectID);
     // handle case when user clicks "Cancel" on the prompt box (subjectID will be null in this case)
