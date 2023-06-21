@@ -232,7 +232,7 @@ function transitionToPhase(newPhase) {
 
         // Initialize game variables
         circles = createCircles();
-        phase = 1;
+        phase = 0;
         phaseStartTime = performance.now();
         startTime = performance.now();
         correctSelections = 0;
@@ -396,7 +396,7 @@ function transitionToPhase(newPhase) {
        */
       function keydownHandler(event) {
         if (event.key === "f" || event.key === "F") {
-            if ((phase === 1 && tutorial) || (phase === 3 && tutorial)) {
+            if (phase === 0 || (phase === 1 && tutorial) || (phase === 3 && tutorial)) {
                 transitionToPhase((phase + 1));
             }
         }
@@ -462,19 +462,46 @@ function transitionToPhase(newPhase) {
        function gameLoop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  if (tutorial & !alreadyEnteredID) {
-    subjectID = prompt("Hello! Please enter your subject ID. (It will be a number)");
-    //subjectID = Number(subjectID);
-    console.log(subjectID);
-    // handle case when user clicks "Cancel" on the prompt box (subjectID will be null in this case)
-    if(subjectID !== null & subjectID !== 0) {
-        alreadyEnteredID = true;
+  
+
+// Phase 0: instruction text
+
+if (phase === 0) {
+    if (!tutorial){
+        phase = 1;
     }
-    // And also handle case when user enters not a number
-    else if(isNaN(subjectID)) {
-        alert("Please enter a number for the subject ID.");
+    else { //continue to the instruction text. start with asking to enter ID
+        if (!alreadyEnteredID) {
+            subjectID = prompt("Hello! Please enter your subject ID. (It will be a number)");
+            //subjectID = Number(subjectID);
+            console.log(subjectID);
+            // handle case when user clicks "Cancel" on the prompt box (subjectID will be null in this case)
+            if(subjectID !== null & subjectID !== 0) {
+                alreadyEnteredID = true;
+            }
+            // And also handle case when user enters not a number
+            else if(isNaN(subjectID)) {
+                alert("Please enter a number for the subject ID.");
+            }   
+        }
+        else{ //now that the ID has been entered, show instruction text
+            full_instruction_text = "You will first see a cross at the center of the screen." + 
+            "Please focus your gaze to that cross. There will be " + flashingBalls[level] + 
+            " circles appearing on the screen, " + (flashingBalls[level] - distractorBalls[level]) + 
+            " of them will flash in GREEN." + "The cross will disappear, and all circles will start to move." + 
+            " Keep track of those " + (flashingBalls[level] - distractorBalls[level])  + 
+            " flashed circles. When the circles stop moving, select which circles you've been tracking by clicking " +
+            "them. When you have made your selection, press the SPACEBAR to submit your selection." +
+            "Press F to start when you are ready. If you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial. ";
+
+            displayText(full_instruction_text, 40, 80);
+
+        }
     }
-  }
+
+}
+
+
 
   //  Phase 1: Display a cross at the center
 if (phase === 1 & alreadyEnteredID) {
@@ -483,10 +510,11 @@ if (phase === 1 & alreadyEnteredID) {
   drawCross();
   if (tutorial) {
     displayText(tutorialTexts[0], 40, 80);
+    
   }
 
 
-  else { //else becase if we're in the tutorial, we transition to the next phase using f
+  else { //else becase if we're not in the tutorial, we transition to the next phase using f
     if (performance.now() - phaseStartTime >= milisecondsJustCross) {
         // Transition to phase 2 after 1.5 seconds
         transitionToPhase(2);
