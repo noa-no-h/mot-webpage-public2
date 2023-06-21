@@ -676,7 +676,7 @@ if (performance.now() - phaseStartTime >=  + milisecondsBallsFlash) {
     if (showSelectMoreText){
         text += "\n Please select " + flashingBalls[level] + " circles!"
     };
-    displayText(text, 40, 80, black);
+    displayText(text, 40, 80, "black");
     if (alreadyCheckedTimeOfQuestion === false){
         timeOfQuestion = performance.now();
         alreadyCheckedTimeOfQuestion = true;
