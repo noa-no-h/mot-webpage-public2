@@ -495,7 +495,7 @@ function canvasMouseMoveHandler(event) {
         ctx.moveTo(centerX + crossSize / 2, centerY - crossSize / 2);
         ctx.lineTo(centerX - crossSize / 2, centerY + crossSize / 2);
         ctx.strokeStyle = "black";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4;
         ctx.stroke();
         ctx.closePath();
       }
@@ -516,6 +516,8 @@ if (phase === 0) {
     else { //continue to the instruction text. start with asking to enter ID
         if (!alreadyEnteredID) {
             let exit = false;
+            IDEntryText = 'Please enter your ID: (It will be a number.)\n' + subjectID;
+            displayText(IDEntryText, 40, 80);
 
             function isPrintable(keyCode) {
                 return (keyCode > 47 && keyCode < 58)   || // number keys
