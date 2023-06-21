@@ -10,7 +10,7 @@
 
       canvas {
         border: 1px solid black;
-        background-color: SteelBlue;
+        background-color: rgb(128, 128, 128);
       }
     </style>
     <script src="https://apis.google.com/js/api.js"></script>
@@ -261,7 +261,7 @@ function transitionToPhase(newPhase) {
             30 + Math.random() * (canvas.height - 60),
             1 + Math.random() * speeds[level],
             1 + Math.random() * speeds[level],
-            "black"
+            "white"
             );
             while (circles.some(c => circlesOverlap(c, newCircle))) {
             newCircle.x = 30 + Math.random() * (canvas.width - 60);
@@ -277,7 +277,7 @@ function transitionToPhase(newPhase) {
             30 + Math.random() * (canvas.height - 60),
             1 + Math.random() * speeds[level],
             1 + Math.random() * speeds[level],
-            "gold"
+            "green"
             );
             while (circles.some(c => circlesOverlap(c, newCircle))) {
             newCircle.x = 30 + Math.random() * (canvas.width - 60);
@@ -333,11 +333,16 @@ function transitionToPhase(newPhase) {
        * @param {number} y - y position of the text
        */
        function displayText(text, x, y) {
-        ctx.font = "40px Arial";
-        ctx.fillStyle = "white";
-        let maxWidth = canvas.width - 2 * x; // Maximum width of the text
-        let lineHeight = 40; // Line height
-        let words = text.split(' ');
+    ctx.font = "40px Arial";
+    ctx.fillStyle = "white";
+    let maxWidth = canvas.width - 2 * x; // Maximum width of the text
+    let lineHeight = 40; // Line height
+
+    // Split the text into paragraphs
+    let paragraphs = text.split('\n');
+
+    for(let p = 0; p < paragraphs.length; p++) {
+        let words = paragraphs[p].split(' ');
         let line = '';
 
         for(let n = 0; n < words.length; n++) {
@@ -354,7 +359,10 @@ function transitionToPhase(newPhase) {
             }
         }
         ctx.fillText(line, x, y);
+        y += lineHeight; // Add an extra line break for each new paragraph
     }
+}
+
       /**
        * Function to handle click event on canvas
        */
@@ -408,7 +416,7 @@ function transitionToPhase(newPhase) {
                 if (circle.isSelected) {
                     totalSelections += 1;
                 }
-                if (circle.origcolor === "gold" && circle.isSelected) {
+                if (circle.origcolor === "green" && circle.isSelected) {
                     correctSelections += 1;
                     console.log("the following circle was correctly selected: " + i)
                 }
@@ -486,13 +494,13 @@ if (phase === 0) {
         }
         else{ //now that the ID has been entered, show instruction text
             full_instruction_text = "You will first see a cross at the center of the screen." + 
-            "Please focus your gaze to that cross. There will be " + flashingBalls[level] + 
+            "Please focus your gaze to that cross. \n\n There will be " + flashingBalls[level] + 
             " circles appearing on the screen, " + (flashingBalls[level] - distractorBalls[level]) + 
-            " of them will flash in GREEN." + "The cross will disappear, and all circles will start to move." + 
+            " of them will flash in GREEN.\n" + "The cross will disappear, and all circles will start to move." + 
             " Keep track of those " + (flashingBalls[level] - distractorBalls[level])  + 
-            " flashed circles. When the circles stop moving, select which circles you've been tracking by clicking " +
-            "them. When you have made your selection, press the SPACEBAR to submit your selection." +
-            "Press F to start when you are ready. If you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial. ";
+            " flashed circles.\n\n When the circles stop moving, select which circles you've been tracking by clicking " +
+            "them. \nWhen you have made your selection, press the SPACEBAR to submit your selection.\n\n" +
+            "Press F to start when you are ready. \n\nIf you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial. ";
 
             displayText(full_instruction_text, 40, 80);
 
@@ -508,13 +516,12 @@ if (phase === 1 & alreadyEnteredID) {
   rowAlreadyAdded = false;
   currentFlashingBalls = flashingBalls[level];
   drawCross();
-  if (tutorial) {
+  if (tutorial) { //transition to the next phase with "f"
     displayText(tutorialTexts[0], 40, 80);
     
   }
 
-
-  else { //else becase if we're not in the tutorial, we transition to the next phase using f
+  else { //else becase if we're not in the tutorial, we transition to the next phase with time
     if (performance.now() - phaseStartTime >= milisecondsJustCross) {
         // Transition to phase 2 after 1.5 seconds
         transitionToPhase(2);
@@ -522,12 +529,12 @@ if (phase === 1 & alreadyEnteredID) {
     }
 }
 
-//Phase 2: Circles appear all black
+//Phase 2: Circles appear all white
 if (phase === 2) {
     drawCross();
 
     circles.forEach((circle) => {
-        circle.color = "black";
+        circle.color = "white";
         circle.draw(ctx);
         });
     
@@ -547,10 +554,10 @@ if (phase === 2) {
 if (phase === 3) {
   drawCross();
 
-  //code to flash circles gold
+  //code to flash circles green
     circles.forEach((circle) => {
-        if (circle.origcolor === "gold") {
-            circle.color = "gold";
+        if (circle.origcolor === "green") {
+            circle.color = "green";
         }
         circle.draw(ctx);
     });
@@ -566,7 +573,7 @@ if (phase === 3) {
     // Transition to phase 4 after 1 seconds
     transitionToPhase(4);
     circles.forEach((circle) => {
-    circle.color = "black";});
+    circle.color = "white";});
   }
 }
 }
@@ -577,7 +584,7 @@ if (phase === 3) {
     circleBounce(); 
 
     circles.forEach((circle) => {
-      circle.color = "black";
+      circle.color = "white";
       circle.update();
       circle.draw(ctx);
     });
