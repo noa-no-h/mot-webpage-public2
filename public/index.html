@@ -240,6 +240,7 @@ function transitionToPhase(newPhase) {
 
         canvas.addEventListener("click", canvasClickHandler);
         document.addEventListener("keydown", keydownHandler);
+        canvas.addEventListener('mousemove', canvasMouseMoveHandler);
 
         gameLoop();
       };
@@ -398,6 +399,32 @@ function transitionToPhase(newPhase) {
     }
     }
 
+    let hoveredCircle = null;
+
+function canvasMouseMoveHandler(event) {
+  if (phase === 5) {
+    let rect = canvas.getBoundingClientRect();
+    let mouseX = event.clientX - rect.left;
+    let mouseY = event.clientY - rect.top;
+
+    // Reset color of the previously hovered circle
+    if (hoveredCircle) {
+      hoveredCircle.color = 'black'; 
+      hoveredCircle = null;
+    }
+
+    circles.forEach((circle) => {
+      let dx = mouseX - circle.x;
+      let dy = mouseY - circle.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= 30) {
+        // Set this circle as the currently hovered circle and change its color
+        hoveredCircle = circle;
+        hoveredCircle.color = 'teal';
+      }
+    });
+  }
+}
+
 
       /**
        * Function to handle keydown event
@@ -500,10 +527,10 @@ if (phase === 0) {
         }
         else{ //now that the ID has been entered, show instruction text
             full_instruction_text = "You will first see a cross at the center of the screen." + 
-            "Please focus your gaze to that cross. \n\n There will be " + flashingBalls[level] + 
-            " circles appearing on the screen, " + (flashingBalls[level] - distractorBalls[level]) + 
+            "Please focus your gaze to that cross. \n\n There will be " + (flashingBalls[level] + distractorBalls[level]) + 
+            " circles appearing on the screen, " + flashingBalls[level] + 
             " of them will flash in GREEN.\n" + "The cross will disappear, and all circles will start to move." + 
-            " Keep track of those " + (flashingBalls[level] - distractorBalls[level])  + 
+            " Keep track of those " + flashingBalls[level]  + 
             " flashed circles.\n\n When the circles stop moving, select which circles you've been tracking by clicking " +
             "them. \nWhen you have made your selection, press the SPACEBAR to submit your selection.\n\n" +
             "Press F to start when you are ready. \n\nIf you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial. ";
@@ -541,6 +568,7 @@ if (phase === 1.5) {
     + "circles will flash briefly. Remember which circles flashed. The cross will disappear, and all circles " +
     "will start moving when the flashing stops.\n\nPress F to continue.";
     displayText(text, 40, 80);
+    drawCross();
 }
 
 //Phase 2: Circles appear all white
