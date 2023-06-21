@@ -13,6 +13,7 @@
         background-color: rgb(128, 128, 128);
       }
     </style>
+    <pre id="output"></pre>
     <script src="https://apis.google.com/js/api.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/stdlib-js/math-base-special-erfcinv@umd/browser.js"></script>
     <script>
@@ -88,7 +89,8 @@ class Circle {
     }
 }
 
-let canvas, ctx, circles, phase, startTime, phaseStartTime, gameStartTime, subjectID;
+let canvas, ctx, circles, phase, startTime, phaseStartTime, gameStartTime;
+let subjectID = '';
 
 let tutorialTexts = [
 "You will first see a cross at the center of the screen. Please focus your gaze to that cross. Press F to continue.",
@@ -409,7 +411,7 @@ function canvasMouseMoveHandler(event) {
 
     // Reset color of the previously hovered circle
     if (hoveredCircle) {
-      hoveredCircle.color = 'black'; 
+      hoveredCircle.color = 'white'; 
       hoveredCircle = null;
     }
 
@@ -513,17 +515,38 @@ if (phase === 0) {
     }
     else { //continue to the instruction text. start with asking to enter ID
         if (!alreadyEnteredID) {
-            subjectID = prompt("Hello! Please enter your subject ID. (It will be a number)");
-            //subjectID = Number(subjectID);
-            console.log(subjectID);
-            // handle case when user clicks "Cancel" on the prompt box (subjectID will be null in this case)
-            if(subjectID !== null & subjectID !== 0) {
-                alreadyEnteredID = true;
+            let exit = false;
+
+            function isPrintable(keyCode) {
+                return (keyCode > 47 && keyCode < 58)   || // number keys
+                    (keyCode == 32 || keyCode == 13) || // spacebar & return key(s) (if you want to allow carriage returns)
+                    (keyCode > 64 && keyCode < 91)   || // letter keys
+                    (keyCode > 95 && keyCode < 112)  || // numpad keys
+                    (keyCode > 185 && keyCode < 193) || // ;=,-./` (in order)
+                    (keyCode > 218 && keyCode < 223);   // [\]' (in order)
             }
-            // And also handle case when user enters not a number
-            else if(isNaN(subjectID)) {
-                alert("Please enter a number for the subject ID.");
-            }   
+
+            window.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    exit = true;
+                } else if (event.key === 'Backspace') {
+                    subjectID = subjectID.slice(0, -1);
+                } else if (isPrintable(event.keyCode)) {
+                    if (event.getModifierState('CapsLock') || event.getModifierState('Shift')) {
+                        subjectID += event.key.toUpperCase();
+                    } else {
+                        subjectID += event.key;
+                    }
+                }
+
+                document.getElementById('output').textContent = name;
+
+                if (exit) {
+                    alreadyEnteredID = true;
+                    window.removeEventListener('keydown', arguments.callee);
+                }
+            });
+ 
         }
         else{ //now that the ID has been entered, show instruction text
             full_instruction_text = "You will first see a cross at the center of the screen." + 
