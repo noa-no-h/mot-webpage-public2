@@ -404,7 +404,7 @@ function transitionToPhase(newPhase) {
        */
       function keydownHandler(event) {
         if (event.key === "f" || event.key === "F") {
-            if (phase === 0 || (phase === 3 && tutorial)) {
+            if (phase === 0) {
                 transitionToPhase((phase + 1));
             }
             else if(phase === 1 && tutorial){
@@ -465,7 +465,7 @@ function transitionToPhase(newPhase) {
         ctx.lineTo(centerX + crossSize / 2, centerY + crossSize / 2);
         ctx.moveTo(centerX + crossSize / 2, centerY - crossSize / 2);
         ctx.lineTo(centerX - crossSize / 2, centerY + crossSize / 2);
-        ctx.strokeStyle = "white";
+        ctx.strokeStyle = "black";
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.closePath();
@@ -537,7 +537,7 @@ if (phase === 1 & alreadyEnteredID) {
 
 // Phase 1.5: second part of tutorial about cross and upcoming circles
 if (phase === 1.5) {
-    text = "Now, " + flashingBalls[level] + distractorBalls[level] + " circles will appear randomly around the screen. " + flashingBalls[level] + " random "
+    text = "Now, " + (flashingBalls[level] + distractorBalls[level]) + " circles will appear randomly around the screen. " + flashingBalls[level] + " random "
     + "circles will flash briefly. Remember which circles flashed. The cross will disappear, and all circles " +
     "will start moving when the flashing stops.\n\nPress F to continue.";
     displayText(text, 40, 80);
@@ -573,17 +573,14 @@ if (phase === 3) {
         circle.draw(ctx);
     });
 
-
-
-  if (!tutorial){ 
-    if (performance.now() - phaseStartTime >=  + milisecondsBallsFlash) {
+if (performance.now() - phaseStartTime >=  + milisecondsBallsFlash) {
     //!tutorial becase if we're in the tutorial, we transition to the next phase using f
     // Transition to phase 4 after 1 seconds
     transitionToPhase(4);
     circles.forEach((circle) => {
     circle.color = "white";});
   }
-}
+
 }
 
   // Phase 4: Motion stage
@@ -608,9 +605,7 @@ if (phase === 3) {
     circles.forEach((circle) => {
       circle.draw(ctx);
       if (circle.isSelected) {
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 5;
-        ctx.strokeRect(circle.x - 35, circle.y - 35, 70, 70);  // Adjust for new circle radius
+        circle.color = "yellow";
       }
     });
 
