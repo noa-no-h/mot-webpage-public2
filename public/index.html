@@ -175,9 +175,7 @@ function generateDPrimesArray() {
       
 function addRow(participant_number, response_time, targets_identified, total_targets, total_distractors, level, timed_out, d_prime, total_time) {
     // Construct the URL
-    const url = 'https://version2-ctij4zrbgq-uw.a.run.app/addRow';
-    //const url = 'http://localhost:8080/addRow';
-
+    const url = ' https://version2-ctij4zrbgq-uw.a.run.app/addRow'; //before "/addRow", this should be the url for the cloud run server. Update this every time you restart the server.
 
     // Create the request body
     const body = {
@@ -480,7 +478,7 @@ function keydownHandler(event) {
 
         IDEntryText = 'Please enter your ID: (It will be a number.)\n' + subjectID;
         displayText(IDEntryText, 40, 80);
-        document.getElementById('output').textContent = subjectID;
+        //document.getElementById('output').textContent = subjectID;
     }
     if (phase === 5 && event.key === " ") {
         // Count correct circle selections and proceed to phase 4
